@@ -1,48 +1,94 @@
---- Required Packages:
+--- Required Yum Packages:
+
+
 python-sqlobject
+
 ATpy
+
 fuse-python
+
+
 
 --- Usage:
 
+
 Create a new, empty database:
+
+
 
 python sqlitefs.py <mountdir>
 
+
+
 Fill database with contents from <SERVER_LOCATION>:
+
+
 
 python fillDB.py
 
+
+
 NOTE: To specify SERVER_LOCATION simply edit lines 13 and 27 from fillDB.py and sqlitefs.py respectively.
+
+
 
 --- Currently Working:
 
+
+
 cp command, will copy item into the DB and display on mount point with Read-Only set by default.
+
+
 
 mv command to move an item onto mount point. Will add item to DB and display with Read-Only permissions.
 
+
+
 Using vi to create and then edit a file. Will save the file with Read-Only permissions on exit.
 
+
+
 rm command, this will remove the file and its properties from the db.
+
 NOTE: This will NOT work on files added via fillDB.py. To allow this, remove the if statement from "def remove(self, path)" at line 676.
 
+
+
 rmdir command, this will remove a folder and all of its contents.
+
 WARNING: This will NOT check if a folder is empty prior to removal!
 
+
+
 You may view a file of any type so long as you have the nessesary reader.
+
 NOTE: Compressed files can not be read from at current implementation level.
+
+
 
 
 --- Not Currently Working:
 
+
+
 chmod command, causes invalid argument error. If run as root causes invalid permissions error...
+
+
 
 chown command, causes I/O error but should not be needed.
 
+
+
 mv command to rename an item, unlinks file from its data.
+
+
 
 truncate command, should have no usage anyway.
 
+
+
 link command, will not work on items added via fillDB.py but should not be needed.
+
+
 
 symlink command, raises an I/O error but should not be needed.
