@@ -7,8 +7,10 @@ import os
 
 database = 'dumpfs.sqlite'
 
+SERVER_LOCATION = 'http://pleiades.icrar.org:7777/'
+
 #Create a table list of all available files on the server.
-T = atpy.Table('http://pleiades.icrar.org:7777/QUERY?query=files_list&format=list',type='ascii')
+T = atpy.Table(SERVER_LOCATION + 'QUERY?query=files_list&format=list',type='ascii')
 
 fileName = []
 size = []

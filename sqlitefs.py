@@ -24,6 +24,8 @@ if not hasattr(fuse, '__version__'):
 
 fuse.fuse_python_api = (0, 2)
 
+SERVER_LOCATION = 'http://pleiades.icrar.org:7777/'
+
 class PseudoStat(fuse.Stat):
     """
     å°‚ç”¨ã®statæ§‹é€ ä½“
@@ -222,7 +224,7 @@ class VFile(object):
                     rev_id=(max_rev+1), uid=self.__inode.uid,
                     gid=self.__inode.gid, atime=now,
                     mtime=now, ctime=self.__inode.ctime, size=size,
-                    mode=self.__inode.mode)
+                    mode=33060)
             self.__inode = new_i
             self.__dirty = True
         else:
@@ -278,7 +280,7 @@ class VFile(object):
                     rev_id=(max_rev+1), uid=self.__inode.uid,
                     gid=self.__inode.gid, atime=now,
                     mtime=now, ctime=self.__inode.ctime, size=size,
-                    mode=self.__inode.mode)
+                    mode=33060)
             self.__inode = new_i
             self.__dirty = True
         else:
@@ -583,6 +585,12 @@ class DBDumpFS:
         """
         return self.create(path, mode|stat.S_IFDIR)
 
+    def rmdir(self, path):
+        """
+        Call remove to remove directory.
+        """
+        return self.remove(path)
+
     def open(self, path, flags, mode=0):
         """
         Opens a file for reading and writing depending on permissions.
@@ -596,7 +604,7 @@ class DBDumpFS:
             mode = 0o644|stat.S_IFREG
         if flags&os.O_CREAT == os.O_CREAT:
             self.create(path, mode)
-        T = atpy.Table('http://pleiades.icrar.org:7777/QUERY?query=files_list&format=list',type='ascii')
+        T = atpy.Table(SERVER_LOCATION + 'QUERY?query=files_list&format=list',type='ascii')
         if not (path[1:] in T['col3']):
             if path in self.__openfiles:
                 self.__openfiles[path].open()
@@ -632,7 +640,7 @@ class DBDumpFS:
         """
 
         #Create a list of available files
-        T = atpy.Table('http://pleiades.icrar.org:7777/QUERY?query=files_list&format=list',type='ascii')
+        T = atpy.Table(SERVER_LOCATION + 'QUERY?query=files_list&format=list',type='ascii')
         #Check is file is local
         if not (path[1:] in T['col3']):
             if not path in self.__openfiles:
@@ -640,7 +648,7 @@ class DBDumpFS:
             return self.__openfiles[path].read(length, offset)
         #File is not local so open and read from server
         else:
-            urlString = 'http://pleiades.icrar.org:7777/RETRIEVE?file_id=' + path[1:]
+            urlString = SERVER_LOCATION + 'RETRIEVE?file_id=' + path[1:]
             ht = None
             ht = urllib2.urlopen(urlString)
             return ht.read(length)
@@ -668,32 +676,35 @@ class DBDumpFS:
         self: object, object(file/directory) that the function was called on.
         path: string, current working directory path.
         """
-        pass
-        '''
-        now = time.time()
-        i_num = self.__get_inode(path)
-        parent_i_num = self.__get_parent_inode(path)
-        parent_i = Inode.selectBy(inode_num=parent_i_num).orderBy("-rev_id")[0]
-        dl = Dentry.selectBy(parent=parent_i)
-        conn = sqlhub.getConnection()
-        trans = conn.transaction()
-        new_i = Inode(inode_num=parent_i.inode_num,
-                rev_id=parent_i.rev_id+1,
-                uid=parent_i.uid, gid=parent_i.gid,
-                atime=now, mtime=parent_i.mtime,
-                ctime=parent_i.ctime, size=parent_i.size,
-                mode=parent_i.mode, connection=trans)
-        for de in dl:
-            if de.inode_num != i_num:
-                Dentry(parent=new_i, filename=de.filename,
-                        inode_num=de.inode_num, connection=trans)
-        trans.commit()
-        if path in self.__openfiles:
-            while not self.__openfiles[path].is_close():
-                self.__openfiles[path].close()
-            del self.__openfiles[path]
-        '''
-
+        #Create a list of available files
+        T = atpy.Table(SERVER_LOCATION + 'QUERY?query=files_list&format=list',type='ascii')
+        #Check is file is local
+        if not (path[1:] in T['col3']):
+            now = time.time()
+            i_num = self.__get_inode(path)
+            parent_i_num = self.__get_parent_inode(path)
+            parent_i = Inode.selectBy(inode_num=parent_i_num).orderBy("-rev_id")[0]
+            dl = Dentry.selectBy(parent=parent_i)
+            conn = sqlhub.getConnection()
+            trans = conn.transaction()
+            new_i = Inode(inode_num=parent_i.inode_num,
+                    rev_id=parent_i.rev_id+1,
+                    uid=parent_i.uid, gid=parent_i.gid,
+                    atime=now, mtime=parent_i.mtime,
+                    ctime=parent_i.ctime, size=parent_i.size,
+                    mode=parent_i.mode, connection=trans)
+            for de in dl:
+                if de.inode_num != i_num:
+                    Dentry(parent=new_i, filename=de.filename,
+                            inode_num=de.inode_num, connection=trans)
+            trans.commit()
+            if path in self.__openfiles:
+                while not self.__openfiles[path].is_close():
+                    self.__openfiles[path].close()
+                del self.__openfiles[path]
+        #If not local then file is from server and removal is denied.
+        else:
+            pass
 
     def rename(self, oldPath, newPath):
         """
@@ -705,9 +716,7 @@ class DBDumpFS:
         newPath: string, new path of object.
 
         """
-
-        pass
-        '''
+        
         conn = sqlhub.getConnection()
         trans = conn.transaction()
         now = time.time()
@@ -741,7 +750,7 @@ class DBDumpFS:
             while not self.__openfiles[oldPath].is_close():
                 self.__openfiles[oldPath].close()
             del self.__openfiles[oldPath]
-        '''
+        
 
     def chmod(self, path, mode):
         """
@@ -1000,7 +1009,8 @@ class SqliteDumpFS(Fuse):
         ãƒ‡ã‚£ãƒ¬ã‚¯ãƒˆãƒªã®å‰Šé™¤
         """
         print '*** rmdir', path
-        return -errno.ENOSYS
+        self.__backend.remove(path)
+        return 0
 
     def statfs (self):
         """
