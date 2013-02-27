@@ -8,13 +8,13 @@ fuse-python
 
 Create a new, empty database:
 
-python sqlitefs.py <mountdir>
+python NGAS_fs.py <mountdir>
 
 Fill database with contents from <SERVER_LOCATION>:
 
 python fillDB.py
 
-NOTE: To specify SERVER_LOCATION simply edit lines 13 and 27 from fillDB.py and sqlitefs.py respectively.
+NOTE: To specify SERVER_LOCATION simply edit lines 13 and 27 from fillDB.py and NGAS_fs.py respectively.
 
 --- Currently Working:
 
