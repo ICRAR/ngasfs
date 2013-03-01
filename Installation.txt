@@ -16,11 +16,12 @@ python fillDB.py
 
 NOTE: To specify SERVER_LOCATION simply edit lines 13 and 27 from fillDB.py and NGAS_fs.py respectively.
 
-To unmount the filesystem:
-
+To unmount:
 fusermount -u <mountdir>
 
 --- Currently Working:
+
+It is possible to copy a file from the mount point onto a local point. This saves a physical copy of the document with Read-Only permissions.
 
 cp command, will copy item into the DB and display on mount point with Read-Only set by default.
 
